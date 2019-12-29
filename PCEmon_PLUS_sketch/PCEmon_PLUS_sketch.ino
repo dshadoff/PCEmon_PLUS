@@ -10,49 +10,31 @@
   by David Shadoff
 */
 
-// Strictly speaking, we should be using "Serial1" to communicate to
-// the PCE side. However, when written in code, that is nearly identical
-// to "Serial" which is the Terminal side, so confusion results.
+// Strictly speaking, "Serial1" is used to communicate to the PCE side
+// However, when written in code, that is nearly identical to "Serial"
+// which is the Terminal side, so confusion can result.
 //
 // I am implementing an alias of "PCE" to help reduce this confusion
-// even though it causes problems with syntax highlighting
+// even though syntax highlighting doesn't show it in the same way as
+// Serial1
 //
-#define PCE     Serial1
 
 
 #include <SD.h>
 
+#include "define.h"
+#include "common.h"
+#include "escape.h"
 
-// This sketch is made specifically for the Adafruit M0 Feather Adalogger
+extern void altLoop();
+extern void setAltMode();
 
-const int chipSelect   = 4;   // Pin used for chip select for on-board SDCard
-
-const int joypadPin    = 11;  // if set high, triggers joypad passthru to port
-const int computerPin  = 10;  // This should be the inverse of joypadPin (status LED)
-
-const int attnPin      = 12;  // joypad CLR pin.
-                              // Future proposed functionality:
-                              //   if PC-E sets this high for >16ms,
-                              //   it is a signal to switch back to MCU mode
-
-bool cardPresent;
 File dataFile;
 
-bool PCE_Echo;
 
-
-void drainSerialQueue()
-{
-  char c;
-
-  //drain the queue
-  PCE.println("");      // in case there's junk on the command line
-  delay(100);           // wait 100 milliseconds
-  while (PCE.available()) {
-    c = PCE.read();
-    delay(3);
-  }
-}
+#define CMD_JOYPAD_IN       ','
+#define CMD_COMPUTER_IN     '.'
+#define CMD_SWITCHMODE      '|'
 
 void setup()
 {
@@ -78,7 +60,8 @@ void setup()
     cardPresent = false;
   }
 
-    drainSerialQueue();
+  drainSerialQueue();
+  modeMonitor = false;
 
   // detect echo on PCE side
   PCE_Echo = false;
@@ -132,6 +115,7 @@ int c;
   }
 
   Serial.println("Get BRAM:");
+  switchPCEInput(COMPUTER_IN);
   
   // if echo was on, temporarily disable echo
   //
@@ -169,28 +153,45 @@ int c;
   Serial.println("done");
 }
 
+
 void loop() {
 int c;
 
+  if (modeMonitor == true) {
+    altLoop();
+    return;
+  }
+  
   if (Serial.available()) {      // If anything comes in Serial (USB),
     c = Serial.read();
 
-    if (c == 'Z')
+    if (c == CMD_SWITCHMODE) {
+      modeMonitor = true;
+      setAltMode();
+    }
+    else if (c == 'Z')
       getbram();
-    else if (c == ',') {           // Note: these keys may be changed in the future
-      digitalWrite(joypadPin,HIGH);
-      digitalWrite(computerPin,LOW);
+    else if (c == CMD_JOYPAD_IN) {           // Note: these keys may be changed in the future
+      switchPCEInput(JOYPAD_IN);
     }
-    else if (c == '.') {           // Note: these keys may be changed in the future
-      digitalWrite(joypadPin,LOW);
-      digitalWrite(computerPin,HIGH);
+    else if (c == CMD_COMPUTER_IN) {           // Note: these keys may be changed in the future
+      switchPCEInput(COMPUTER_IN);
     }
+//    else if (c == '?') {           // Note: these keys may be changed in the future
+//      Serial.write(FG_CYAN "HELP ME" THM_ADDRESS);
+//      PCE.write(c);
+//    }
+//    else if (c == '\x0a') {
+//      Serial.println("");
+//    }
     else
 
+//      printhex2(c);
+//      Serial.print(" ");
       PCE.write(c);   // read it and send it out Serial1 (pins 0 & 1)
   }
 
   if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)
-    Serial.write(PCE.read());   // read it and send it out Serial (USB)
+    Serial.write(PCE.read());       // read it and send it out Serial (USB)
   }
 }
