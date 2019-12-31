@@ -30,11 +30,13 @@ extern void altLoop();
 extern void setAltMode();
 
 File dataFile;
+bool helpGeneral = false;
 
 
 #define CMD_JOYPAD_IN       ','
 #define CMD_COMPUTER_IN     '.'
 #define CMD_SWITCHMODE      '|'
+
 
 void setup()
 {
@@ -153,6 +155,15 @@ int c;
   Serial.println("done");
 }
 
+void miniHelp()
+{
+  Serial.println("");
+  Serial.println("");
+  Serial.println(FG_YELLOW " (Special PCEmon PLUS commands in YELLOW)" FG_DEFAULT); 
+  Serial.println(FG_YELLOW " , - Switch to PCE Joypad input" FG_DEFAULT); 
+  Serial.println(FG_YELLOW " . - Switch to PCEmon PLUS input" FG_DEFAULT); 
+  Serial.print(FG_YELLOW " | - Switch to alternate mode (bug monitor mode)" FG_DEFAULT); 
+}
 
 void loop() {
 int c;
@@ -174,21 +185,29 @@ int c;
     else if (c == CMD_JOYPAD_IN) {           // Note: these keys may be changed in the future
       switchPCEInput(JOYPAD_IN);
     }
-    else if (c == CMD_COMPUTER_IN) {           // Note: these keys may be changed in the future
+    else if (c == CMD_COMPUTER_IN) {         // Note: these keys may be changed in the future
       switchPCEInput(COMPUTER_IN);
     }
-//    else if (c == '?') {           // Note: these keys may be changed in the future
-//      Serial.write(FG_CYAN "HELP ME" THM_ADDRESS);
-//      PCE.write(c);
-//    }
-//    else if (c == '\x0a') {
-//      Serial.println("");
-//    }
-    else
-
-//      printhex2(c);
-//      Serial.print(" ");
+    else if (c == '?') {
+      helpGeneral = true;
+      switchPCEInput(COMPUTER_IN);
+      PCE.write(c);
+    }
+    else if (c == '\x0a') {
+      switchPCEInput(COMPUTER_IN);
+      PCE.write(c);
+      if (helpGeneral == true) {
+        miniHelp();            // Preface PCEmon's regular help with our own
+        helpGeneral = false;
+      }
+    }
+    else {
+      helpGeneral = false;
+      switchPCEInput(COMPUTER_IN);
       PCE.write(c);   // read it and send it out Serial1 (pins 0 & 1)
+//      printhex2(c);        // This could be an alternate to print
+//      Serial.print(" ");   // hex codes of unknown keys
+    }
   }
 
   if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)

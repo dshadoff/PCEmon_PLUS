@@ -12,7 +12,7 @@ extern bool modeMonitor;
 
 
 extern bool checkForKey();
-extern int fetchKeyInput();
+extern int  fetchKeyInput();
 
 extern void printat(int row, int col);
 extern void printat(char *rowcol);
