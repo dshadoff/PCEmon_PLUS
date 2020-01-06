@@ -1,9 +1,7 @@
 # TODO (feature requests):
 
-- split interface between "direct command-line" (i.e. original) and "IDE" (context-aware, interactive).
-- Add ZMODEM transfers for easier data handling
-- Add some color-coding
 - Add interactive memory edit
+- Add ZMODEM transfers for easier data handling
 - Add disassembler (and save to SDCard/computer)
 - Add more clever management of input control (i.e. PCE can signal back with
 extended /CLR=high signal, that PCE is ready for PCEmoninput)

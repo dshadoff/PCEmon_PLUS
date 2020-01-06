@@ -12,6 +12,9 @@ extern bool modeMonitor;
 
 
 extern bool checkForKey();
+extern char waitKeyEnterEscape(bool beep);
+extern char getKeyFromList(char * list, bool beep);
+
 extern int  fetchKeyInput();
 
 extern void printat(int row, int col);

@@ -23,6 +23,57 @@ bool checkForKey()
   return(Serial.available());
 }
 
+char waitKeyEnterEscape(bool beep)
+{
+char c;
+
+  while (1) {
+    while (!checkForKey());
+    
+    c = Serial.read();
+    if ((c == KEY_ENTER) || (c == KEY_ESCAPE))
+      break;
+
+    if (beep == true) {
+      Serial.write(BELL);
+    }
+  }
+
+  return(c);
+}
+
+char getKeyFromList(char * list, bool beep)
+{
+int i;
+char c;
+bool exit;
+
+  exit = false;
+  while (exit == false) {
+    while (!checkForKey());
+
+    c = Serial.read();
+
+    if (c == KEY_ESCAPE) {
+      exit = true;
+      break;
+    }
+
+    for (i = 0 ; i < strlen(list); i++) {
+      if ( c == *(list + i) ) {
+        exit = true;
+        break;
+      }
+    }
+
+    if ((exit != true) && (beep == true)) {
+      Serial.write(BELL);
+    }
+  }
+
+  return(c);
+}
+
 // single-code keystrokes:
 //#define KEY_BACKSPACE    0x08
 //#define KEY_TAB          0x09

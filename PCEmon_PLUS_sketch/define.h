@@ -16,7 +16,7 @@
 // single-code keystrokes:
 #define KEY_BACKSPACE    0x08
 #define KEY_TAB          0x09
-#define KEY_LF           0x0A
+#define KEY_ENTER        0x0A
 #define KEY_ESCAPE       0x1B
 #define KEY_DELETE       0x7F
 

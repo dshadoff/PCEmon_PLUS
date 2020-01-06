@@ -11,50 +11,52 @@
 #include "common.h"
 #include "escape.h"
 
-
-#define ALT_CMD_SAVE            'S'
-#define ALT_CMD_sAVE            's'
+// COMMANDS:
+//
 #define ALT_CMD_JOYPAD_IN       ','
 #define ALT_CMD_COMPUTER_IN     '.'
 #define ALT_CMD_HELP            '?'
 #define ALT_CMD_SWITCHMODE      '|'
 
-#define POS_TITLE        "1;30"
-#define POS_BAUD         "1;80"
+#define ALT_CMD_SAVE            'S'
+#define ALT_CMD_LCASE_SAVE      's'
+#define ALT_CMD_VIEW            'V'
+#define ALT_CMD_LCASE_VIEW      'v'
 
-#define POS_REG_HEADING  "4;4"
-#define POS_REG_A        "6;6"
-#define POS_REG_X        "7;6"
-#define POS_REG_Y        "8;6"
-#define POS_REG_S        "9;6"
-#define POS_REG_PC       "10;5"
-#define POS_MPR_ROW      11
-#define POS_MPR_COL      3
+// SCREEN POSITIONS:
+//
+#define POS_TITLE               "1;42"
+#define POS_BAUD                "1;2"
+#define POS_FILENAME            "1;80"
 
-#define POS_HEX_HEADING  "4;44"
-#define POS_HEX_HEADING2 "5;25"
-#define POS_HEX_ROW      6
-#define POS_HEX_COL      19
+#define POS_REG_HEADING         "4;4"
+#define POS_REG_A               "6;6"
+#define POS_REG_X               "7;6"
+#define POS_REG_Y               "8;6"
+#define POS_REG_S               "9;6"
+#define POS_REG_F               "10;6"
+#define POS_REG_PC              "12;5"
+#define POS_MPR_ROW             14
+#define POS_MPR_COL             3
 
-#define POS_CHR_HEADING  "4;75"
-#define POS_CHR_ROW      6
-#define POS_CHR_COL      75
+#define POS_HEX_HEADING         "4;50"
+#define POS_HEX_HEADING2        "5;31"
+#define POS_HEX_ROW             6
+#define POS_HEX_COL             20
 
-#define POS_CMD_HEADING  "27;6"
-#define POS_SUBCMD_LIST  "28;15"
+#define POS_CHR_HEADING         "4;87"
+#define POS_CHR_ROW             6
+#define POS_CHR_COL             81
 
-#define STATUS_LINE  30
+#define POS_CMD_HEADING         "27;6"
+#define POS_SUBCMD_LIST         "28;15"
 
+#define STATUS_LINE             30
 
-int disp_addr;
-
-char reg_a  = 0;
-char reg_f  = 0;
-char reg_x  = 0;
-char reg_y  = 0;
-char reg_s  = 0;
-int  reg_pc = 0;
-char reg_mpr[8];
+// MODES:
+//
+#define DISP_MAIN_MEM            1
+#define DISP_VIDEO_MEM           2
 
 // Thoughts on diffrent display modes (not yet implemented)
 //
@@ -63,6 +65,23 @@ char reg_mpr[8];
 //#define BRAM_MEMORY        1
 //#define ADPCM_MEMORY       1
 //#define VCE_MEMORY         1
+
+
+
+// Globals:
+//
+int  disp_addr;
+char disp_mode = DISP_MAIN_MEM;
+
+char reg_a  = 0;
+char reg_f  = 0;
+char reg_x  = 0;
+char reg_y  = 0;
+char reg_s  = 0;
+int  reg_pc = 0;
+char reg_mpr[8];
+bool reg_flg[8];
+const char flg_true[] = "NVTBDIZC";
 
 char cmd_buffer[32];    // for sending to PCE
 char line_buffer[129];  // for reading from PCE
@@ -93,6 +112,16 @@ void getRegs()
   reg_x = hextobyte(line_buffer + 10);
   reg_y = hextobyte(line_buffer + 13);
   reg_s = hextobyte(line_buffer + 27);
+
+  reg_flg[0] = (line_buffer[17] == '1') ? true : false;
+  reg_flg[1] = (line_buffer[18] == '1') ? true : false;
+  reg_flg[2] = (line_buffer[19] == '1') ? true : false;
+  reg_flg[3] = (line_buffer[20] == '1') ? true : false;
+  reg_flg[4] = (line_buffer[21] == '1') ? true : false;
+  reg_flg[5] = (line_buffer[22] == '1') ? true : false;
+  reg_flg[6] = (line_buffer[23] == '1') ? true : false;
+  reg_flg[7] = (line_buffer[24] == '1') ? true : false;
+
   reg_mpr[0] = hextoint16(line_buffer + 32);
   reg_mpr[1] = hextoint16(line_buffer + 35);
   reg_mpr[2] = hextoint16(line_buffer + 41);
@@ -110,10 +139,18 @@ void getMemoryScreen(int addr)
 {
   switchPCEInput(COMPUTER_IN);
   strcpy(cmd_buffer, "D           ");
-  hex4tobuf( addr, cmd_buffer + 3 );
-  hex4tobuf( addr + 0x100, cmd_buffer + 8 );
+
+  if (disp_mode == DISP_MAIN_MEM) {
+    hex4tobuf( addr, cmd_buffer + 3 );
+    hex4tobuf( addr + 0x100, cmd_buffer + 8 );
+  }
+  else if (disp_mode == DISP_VIDEO_MEM) {
+    cmd_buffer[1] = 'V';
+    hex4tobuf( addr, cmd_buffer + 3 );
+    hex4tobuf( addr + 0x80, cmd_buffer + 8 );
+  }
   cmd_buffer[12] = 0;
-  
+
   PCE.println(cmd_buffer);
   readBinarytoBuf(256, hex_buffer);
 }
@@ -123,7 +160,7 @@ void getMemoryBank(char bank)
 {
   switchPCEInput(COMPUTER_IN);
   strcpy(cmd_buffer, "D   :");
-  hex2tobuf( bank, cmd_buffer + 2 );
+    hex2tobuf( bank, cmd_buffer + 2 );
   cmd_buffer[5] = 0;
   
   PCE.println(cmd_buffer);
@@ -156,6 +193,7 @@ void getPalettes()
 void altDispRegs()
 {
 int i;
+char c;
 
   printat(POS_REG_HEADING);
   Serial.print(THM_REG_TITLE "REGISTERS");
@@ -175,8 +213,22 @@ int i;
   Serial.print(THM_REGS "PC = ");
   printhex2(reg_pc >> 8);
   printhex2(reg_pc & 0xff);
+
+  printat(POS_REG_F);
+  Serial.print(THM_REGS "F = ");
+  for (i = 0; i < 8; i++) {
+    if (reg_flg[i] == true) {
+      c = flg_true[i];
+      Serial.print(THM_REGS);
+      Serial.print(c);
+    } else {
+      c = flg_true[i];
+      Serial.print(THM_REGS_BKGND);
+      Serial.print(c);
+    }
+  }
   
-  for (i = 0; i < 7; i++) {
+  for (i = 0; i < 8; i++) {
     printat(POS_MPR_ROW + i, POS_MPR_COL);
     Serial.print(THM_REGS "MPR");
     Serial.print(i);
@@ -189,18 +241,42 @@ void altDispHex()
 {
 int i, j;
 
-  // print hex area
-  for (i = 0; i < 16; i++) {
-    printat(POS_HEX_ROW + i, POS_HEX_COL);
-    Serial.print(THM_ADDRESS);
-    printhex4(disp_addr + (i*16));
-    Serial.print(": ");
-    Serial.print(THM_HEXDATA);
-    for (j = 0; j < 16; j++) {
-      printhex2(hex_buffer[(i*16) + j]);
-      Serial.print(" ");
-    }
-  } 
+  switch (disp_mode) {
+
+    case DISP_MAIN_MEM:
+      // print hex area
+      for (i = 0; i < 16; i++) {
+        printat(POS_HEX_ROW + i, POS_HEX_COL);
+        Serial.print(CLEAR_EOL THM_ADDRESS);
+        Serial.print("(");
+        printhex2( reg_mpr[(disp_addr + (i*16)) >>13] );
+        Serial.print("):");
+        printhex4(disp_addr + (i*16));
+        Serial.print(": ");
+        Serial.print(THM_HEXDATA);
+        for (j = 0; j < 16; j++) {
+          printhex2(hex_buffer[(i*16) + j]);
+          Serial.print(" ");
+        }
+      }
+      break;
+  
+    case DISP_VIDEO_MEM: 
+      // print hex area
+      for (i = 0; i < 16; i++) {
+        printat(POS_HEX_ROW + i, POS_HEX_COL);
+        Serial.print(CLEAR_EOL THM_ADDRESS);
+        Serial.print("     ");
+        printhex4(disp_addr + (i*8));
+        Serial.print(":  ");
+        Serial.print(THM_HEXDATA);
+        for (j = 0; j < 8; j++) {
+          printhex4( (hex_buffer[(i*16) + (j*2) + 1]<<8) | hex_buffer[(i*16) + (j*2)]  );
+          Serial.print("  ");
+        }
+      }
+      break;
+  }
 }
 
 void altDispChar()
@@ -235,12 +311,21 @@ int i, j;
 
   altDispRegs();
 
-  // print hex area
-  printat(POS_HEX_HEADING);
-  Serial.print(THM_HEX_TITLE "MEMORY");
-  printat(POS_HEX_HEADING2);
-  Serial.print(THM_HEX_TITLE " 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
-
+  if (disp_mode == DISP_MAIN_MEM) {
+    // print hex area
+    printat(POS_HEX_HEADING);
+    Serial.print(THM_HEX_TITLE "MAIN MEMORY");
+    printat(POS_HEX_HEADING2);
+    Serial.print(THM_HEX_TITLE " 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
+  }
+  else if (disp_mode == DISP_VIDEO_MEM) {
+    // print hex area
+    printat(POS_HEX_HEADING);
+    Serial.print(THM_HEX_TITLE "VIDEO MEMORY");
+    printat(POS_HEX_HEADING2);
+    Serial.print(THM_HEX_TITLE "  0/8   1/9   2/A   3/B   4/C   5/D   6/E   7/F");
+  }
+  
   altDispHex();
   
   // print char area
@@ -283,12 +368,15 @@ char c;
   Serial.println(" .   - Switch PC Engine input to use microcontroller");
   Serial.println(" up/dn/pgup/pgdn - scroll through displayed data");
   Serial.println("");
-  Serial.println(" Command 5");
-  Serial.println(" Command 6");
-  Serial.println(" Command 7");
+  Serial.println(" V   - View memory (Main/VRAM); soon will accept address input");
   Serial.println("");
+  Serial.println(" (Note that unassigned keys will just show their hex code values)");
   Serial.println("");
-  Serial.println("");
+  Serial.println(" (Another Command)");
+  Serial.println(" (Another Command)");
+  Serial.println("    .");
+  Serial.println("    .");
+  Serial.println("    .");
   Serial.println("");
   Serial.println("");
   Serial.println("");
@@ -314,8 +402,15 @@ void setAltMode()
 
   // first, form the command to invoke:
   // D command:  Dx aaaa bbbb, where x = ' '/'V'
+
+  disp_mode = DISP_MAIN_MEM;
   
-  disp_addr = 0xe000;
+  if (disp_mode == DISP_MAIN_MEM) {
+    disp_addr = 0xe000;
+  }
+  else if (disp_mode == DISP_VIDEO_MEM) {
+    disp_addr = 0x0000;
+  }
 
   getMemoryScreen(disp_addr);
 
@@ -365,6 +460,74 @@ void showData(int addr)
 //  altScreen();
 //}
 
+//////
+void submenuView()
+{
+char c;
+char cmdList[] = "MmVv";
+char temp_disp_mode;
+
+  printat(POS_SUBCMD_LIST);
+  Serial.print(THM_SUBCMD_HILITE "<M>" THM_SUBCOMMAND "ain Memory  ");
+  Serial.print(THM_SUBCMD_HILITE "<V>" THM_SUBCOMMAND "RAM  ");
+
+  printat(POS_CMD_HEADING);
+  Serial.print(THM_CMD_TITLE "COMMAND: " THM_COMMAND);
+
+  Serial.print("View ");   // in Command slot
+
+  c = getKeyFromList(cmdList, true);  // command list, and beep if wrong keys
+
+  temp_disp_mode = disp_mode;
+
+  switch (c) {
+    case KEY_ESCAPE:
+      break;
+      
+    case 'm':
+    case 'M':
+      temp_disp_mode = DISP_MAIN_MEM;
+      Serial.print("Main Memory");
+      break;
+
+    case 'v':
+    case 'V':
+      temp_disp_mode = DISP_VIDEO_MEM;
+      Serial.print("VRAM");
+      break;
+  }
+
+  // only allow Enter or ESCAPE
+  //    --->  this should probably be a common routine
+  //
+  c = waitKeyEnterEscape(true);  // beep if wrong key
+  
+  if (c == KEY_ENTER) {
+    disp_mode = temp_disp_mode;
+  }
+}
+
+int scrollLineAmount(char mode)
+{
+int amount;
+
+  amount = 0x10;
+  if (mode == DISP_VIDEO_MEM)
+    amount = 0x08;
+
+  return(amount);
+}
+
+int scrollPageAmount(char mode)
+{
+int amount;
+
+  amount = 0x100;
+  if (mode == DISP_VIDEO_MEM)
+    amount = 0x80;
+
+  return(amount);
+}
 
 ///////////////////////////////////////////////////
 // Command fetch loop (for 'monitor' mode)
@@ -383,20 +546,26 @@ int c;
 //        submenuSave();
 //        break;
 
+      case ALT_CMD_VIEW:
+      case ALT_CMD_LCASE_VIEW:
+        submenuView();
+        altScreen();
+        break;
+
       case KEY_PAGEDOWN:
-        showData(disp_addr + 0x100);
+        showData(disp_addr + scrollPageAmount(disp_mode));
         break;
 
       case KEY_PAGEUP:
-        showData(disp_addr - 0x100);
+        showData(disp_addr - scrollPageAmount(disp_mode));
         break;
 
       case KEY_DOWNARROW:
-        showData(disp_addr + 0x10);
+        showData(disp_addr + scrollLineAmount(disp_mode));
         break;
 
       case KEY_UPARROW:
-        showData(disp_addr + 0x10);
+        showData(disp_addr + scrollLineAmount(disp_mode));
         break;
 
       case ALT_CMD_SWITCHMODE:
@@ -416,16 +585,16 @@ int c;
         altHelp();
         break;
 
-      case KEY_LF:                // just display the screen again
+      case KEY_ENTER:             // just display the screen again
 //      case KEY_ESCAPE:
         altScreen();
         break;
 
       default:                    // unknown key: print hex value(s)
-        if (c < 0x100)   // not a special code
+        if (c < 0x100)    // not a special code
           printhex2(c);
         else
-          printhex4(c);
+          printhex4(c);   // special code - identified as an ESC-sequence
         Serial.print(" ");
         break;
     }
@@ -433,6 +602,7 @@ int c;
 
   // spool returned data from PCE back to screen
   // (if not consumed by commands above)
+  // -> In Bug Monitor mode, this should be rare if at all
   //
   if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)
     Serial.write(PCE.read());   // read it and send it out Serial (USB)

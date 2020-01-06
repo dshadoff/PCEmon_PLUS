@@ -14,9 +14,8 @@
 // However, when written in code, that is nearly identical to "Serial"
 // which is the Terminal side, so confusion can result.
 //
-// I am implementing an alias of "PCE" to help reduce this confusion
-// even though syntax highlighting doesn't show it in the same way as
-// Serial1
+// I am using an alias of "PCE" to help reduce this confusion even
+// though syntax highlighting doesn't show it in the same way as Serial1
 //
 
 

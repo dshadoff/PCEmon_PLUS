@@ -52,6 +52,7 @@
 #define THM_BAUD          FG_BRT_RED
 #define THM_REG_TITLE     FG_BRT_WHITE
 #define THM_REGS          FG_GREEN
+#define THM_REGS_BKGND    FG_BLUE
 //#define THM_ADDR_TITLE   FG_BRT_WHITE
 #define THM_ADDRESS       FG_WHITE
 #define THM_HEX_TITLE     FG_BRT_WHITE
@@ -71,6 +72,10 @@
 #define PRINTAT_OPEN      "\x1b["
 #define PRINTAT_SEPARATOR ";"
 #define PRINTAT_CLOSE     "f"
+
+#define LF                0x0a
+#define ESCAPE            0x1b
+#define BELL              0x07
 
 
 //
