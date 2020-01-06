@@ -1,5 +1,13 @@
 # REVISIONs
 
+20200105:
+- added flag display
+- added VRAM display
+- started implementing commands ("View" in this case)
+- cleaned up the key fetch framework a bit
+- various minor changes
+- added help text 
+
 20191231:
 - bugs and improvements
 - add some (but not enough) help text
