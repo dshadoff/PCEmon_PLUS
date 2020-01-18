@@ -1,6 +1,6 @@
 # REVISIONs
 
-20200105:
+20200118:
 - added scroll left/right (1-byte movement)
 - added "Address" entry command
 - fix bugs; minor formatting changes
