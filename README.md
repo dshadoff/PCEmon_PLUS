@@ -15,9 +15,9 @@ Features:
 - Instead of swapping cables between joypad and computer, this board can change
 which input is active, without interrupting the communications between computer
 and microcontroller.
-- Currently, only a shell pass-thru interface with trivial commands are implemented
-(including input-swapping), with more to come once the rev. B boards are received
-and verified
+- Currently, it powers up with a shell pass-thru interface with trivial commands;
+typing the '|' will bring up an alternate interface which is being built, but can
+currently view and scroll through main memory and VRAM (with more to come)
 
 
 NOTES:

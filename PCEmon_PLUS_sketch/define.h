@@ -3,6 +3,7 @@
 //
 // Common Definitions file used by everybody
 //
+// (c) 2019, 2020 by David Shadoff
 
 #define PCE     Serial1
 

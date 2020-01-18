@@ -1,6 +1,11 @@
 # REVISIONs
 
 20200105:
+- added scroll left/right (1-byte movement)
+- added "Address" entry command
+- fix bugs; minor formatting changes
+
+20200105:
 - added flag display
 - added VRAM display
 - started implementing commands ("View" in this case)

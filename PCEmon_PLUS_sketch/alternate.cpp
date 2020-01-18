@@ -1,7 +1,8 @@
 //
 // Alternate.c
+// This code drives the PCEmon PLUS mode screen interaction
 //
-// 
+// (c) 2019, 2020 by David Shadoff
 //
 
 #include <Arduino.h>
@@ -18,6 +19,8 @@
 #define ALT_CMD_HELP            '?'
 #define ALT_CMD_SWITCHMODE      '|'
 
+#define ALT_CMD_ADDRESS         'A'
+#define ALT_CMD_LCASE_ADDRESS   'a'
 #define ALT_CMD_SAVE            'S'
 #define ALT_CMD_LCASE_SAVE      's'
 #define ALT_CMD_VIEW            'V'
@@ -39,7 +42,7 @@
 #define POS_MPR_ROW             14
 #define POS_MPR_COL             3
 
-#define POS_HEX_HEADING         "4;50"
+#define POS_HEX_HEADING         "4;48"
 #define POS_HEX_HEADING2        "5;31"
 #define POS_HEX_ROW             6
 #define POS_HEX_COL             20
@@ -70,7 +73,7 @@
 
 // Globals:
 //
-int  disp_addr;
+int  disp_addr[5];
 char disp_mode = DISP_MAIN_MEM;
 
 char reg_a  = 0;
@@ -245,13 +248,26 @@ int i, j;
 
     case DISP_MAIN_MEM:
       // print hex area
+      
+      // Heading
+      printat(POS_HEX_HEADING);
+      Serial.print(THM_HEX_TITLE "MAIN MEMORY");
+      printat(POS_HEX_HEADING2);
+      Serial.print(THM_HEX_TITLE);
+      for (i = 0; i < 16; i++) {
+        Serial.print(" ");
+        Serial.print( ((disp_addr[disp_mode] + i) & 0x0f), HEX);
+        Serial.print(" ");
+      }
+
+      // Data Block
       for (i = 0; i < 16; i++) {
         printat(POS_HEX_ROW + i, POS_HEX_COL);
         Serial.print(CLEAR_EOL THM_ADDRESS);
         Serial.print("(");
-        printhex2( reg_mpr[(disp_addr + (i*16)) >>13] );
+        printhex2( reg_mpr[(disp_addr[disp_mode] + (i*16)) >>13] );
         Serial.print("):");
-        printhex4(disp_addr + (i*16));
+        printhex4(disp_addr[disp_mode] + (i*16));
         Serial.print(": ");
         Serial.print(THM_HEXDATA);
         for (j = 0; j < 16; j++) {
@@ -263,11 +279,25 @@ int i, j;
   
     case DISP_VIDEO_MEM: 
       // print hex area
+      
+      // Heading
+      printat(POS_HEX_HEADING);
+      Serial.print(THM_HEX_TITLE "VIDEO MEMORY");
+      printat(POS_HEX_HEADING2);
+      for (i = 0; i < 8; i++) {
+        Serial.print(" ");
+        Serial.print( ((disp_addr[disp_mode] + i) & 0x0f), HEX);
+        Serial.print("/");
+        Serial.print( ((disp_addr[disp_mode] + i + 8) & 0x0f), HEX);
+        Serial.print("  ");
+      }
+
+      // Data Block
       for (i = 0; i < 16; i++) {
         printat(POS_HEX_ROW + i, POS_HEX_COL);
         Serial.print(CLEAR_EOL THM_ADDRESS);
-        Serial.print("     ");
-        printhex4(disp_addr + (i*8));
+        Serial.print("    ");
+        printhex4(disp_addr[disp_mode] + (i*8));
         Serial.print(":  ");
         Serial.print(THM_HEXDATA);
         for (j = 0; j < 8; j++) {
@@ -297,13 +327,19 @@ int i, j;
   }
 }
 
+void altCommand()
+{
+  printat(POS_CMD_HEADING);
+  Serial.print(THM_CMD_TITLE "COMMAND: " THM_COMMAND);
+}
+
 void altScreen()
 {
 int i, j;
 
   Serial.print(CLEAR HOME);
   printat(POS_TITLE);
-  Serial.print(THM_TITLE "BUG MONITOR MODE");
+  Serial.print(THM_TITLE "PCEMON PLUS MODE");
 
   // print registers section
   printat(POS_REG_HEADING);
@@ -311,21 +347,6 @@ int i, j;
 
   altDispRegs();
 
-  if (disp_mode == DISP_MAIN_MEM) {
-    // print hex area
-    printat(POS_HEX_HEADING);
-    Serial.print(THM_HEX_TITLE "MAIN MEMORY");
-    printat(POS_HEX_HEADING2);
-    Serial.print(THM_HEX_TITLE " 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
-  }
-  else if (disp_mode == DISP_VIDEO_MEM) {
-    // print hex area
-    printat(POS_HEX_HEADING);
-    Serial.print(THM_HEX_TITLE "VIDEO MEMORY");
-    printat(POS_HEX_HEADING2);
-    Serial.print(THM_HEX_TITLE "  0/8   1/9   2/A   3/B   4/C   5/D   6/E   7/F");
-  }
-  
   altDispHex();
   
   // print char area
@@ -343,8 +364,7 @@ int i, j;
   Serial.print(CLEAR_EOL);
 
   // print command line
-  printat(POS_CMD_HEADING);
-  Serial.print(THM_CMD_TITLE "COMMAND: " THM_COMMAND);
+  altCommand();
 }
 
 
@@ -368,7 +388,8 @@ char c;
   Serial.println(" .   - Switch PC Engine input to use microcontroller");
   Serial.println(" up/dn/pgup/pgdn - scroll through displayed data");
   Serial.println("");
-  Serial.println(" V   - View memory (Main/VRAM); soon will accept address input");
+  Serial.println(" A xxxx - Set address (hexadecimal)");
+  Serial.println(" V      - View memory (Main Memory/VRAM)");
   Serial.println("");
   Serial.println(" (Note that unassigned keys will just show their hex code values)");
   Serial.println("");
@@ -403,16 +424,12 @@ void setAltMode()
   // first, form the command to invoke:
   // D command:  Dx aaaa bbbb, where x = ' '/'V'
 
+  disp_addr[DISP_MAIN_MEM] = 0xe000;
+  disp_addr[DISP_VIDEO_MEM] = 0x0000;
+
   disp_mode = DISP_MAIN_MEM;
   
-  if (disp_mode == DISP_MAIN_MEM) {
-    disp_addr = 0xe000;
-  }
-  else if (disp_mode == DISP_VIDEO_MEM) {
-    disp_addr = 0x0000;
-  }
-
-  getMemoryScreen(disp_addr);
+  getMemoryScreen(disp_addr[disp_mode]);
 
   Serial.println("AlternateMode is Set");
 
@@ -428,19 +445,22 @@ void setNormalMode()
   PCE.println("O E");        // turn off (or on) echo
   PCE_Echo = true;
 
+  Serial.println("");
+  Serial.println("");
   Serial.println("Normal Mode is Set");
 }
 
 //////
 void showData(int addr)
 {
-  disp_addr = addr & 0xffff;
-  getMemoryScreen(disp_addr);
+  disp_addr[disp_mode] = addr & 0xffff;
+  getMemoryScreen(disp_addr[disp_mode]);
   altDispHex();
-  altDispChar();
+  if ((disp_mode == DISP_MAIN_MEM) || (disp_mode == DISP_VIDEO_MEM)) {
+    altDispChar();
+  }
   // go back to command line
-  printat(POS_CMD_HEADING);
-  Serial.print(THM_CMD_TITLE "COMMAND: " THM_COMMAND);
+  altCommand();
 }
 
 //////
@@ -461,6 +481,31 @@ void showData(int addr)
 //}
 
 //////
+
+void submenuAddress()
+{
+char c;
+char tmp_addr[5];
+int i;
+
+  tmp_addr[4] = '\0';
+
+  printat(POS_SUBCMD_LIST);
+  Serial.print(THM_SUBCMD_HILITE "<xxxx>" THM_SUBCOMMAND " (hexadecimal address) ");
+
+  altCommand();
+
+  Serial.print("Set Address = ");   // in Command slot
+
+  c = enterValue(4, 16, tmp_addr);
+  
+  if (c == KEY_ENTER) {
+    disp_addr[disp_mode] = hextoint16(tmp_addr);
+    showData(disp_addr[disp_mode]);
+  }
+}
+
+//////
 void submenuView()
 {
 char c;
@@ -471,8 +516,7 @@ char temp_disp_mode;
   Serial.print(THM_SUBCMD_HILITE "<M>" THM_SUBCOMMAND "ain Memory  ");
   Serial.print(THM_SUBCMD_HILITE "<V>" THM_SUBCOMMAND "RAM  ");
 
-  printat(POS_CMD_HEADING);
-  Serial.print(THM_CMD_TITLE "COMMAND: " THM_COMMAND);
+  altCommand();
 
   Serial.print("View ");   // in Command slot
 
@@ -498,12 +542,12 @@ char temp_disp_mode;
   }
 
   // only allow Enter or ESCAPE
-  //    --->  this should probably be a common routine
   //
   c = waitKeyEnterEscape(true);  // beep if wrong key
   
   if (c == KEY_ENTER) {
     disp_mode = temp_disp_mode;
+    showData(disp_addr[disp_mode]);
   }
 }
 
@@ -511,9 +555,15 @@ int scrollLineAmount(char mode)
 {
 int amount;
 
-  amount = 0x10;
-  if (mode == DISP_VIDEO_MEM)
-    amount = 0x08;
+  switch(mode) {
+    case DISP_VIDEO_MEM:
+      amount = 0x08;
+      break;
+
+    default:
+      amount = 0x10;
+      break;
+  }
 
   return(amount);
 }
@@ -522,9 +572,15 @@ int scrollPageAmount(char mode)
 {
 int amount;
 
-  amount = 0x100;
-  if (mode == DISP_VIDEO_MEM)
-    amount = 0x80;
+  switch(mode) {
+    case DISP_VIDEO_MEM:
+      amount = 0x80;
+      break;
+
+    default:
+      amount = 0x100;
+      break;
+  }
 
   return(amount);
 }
@@ -546,26 +602,40 @@ int c;
 //        submenuSave();
 //        break;
 
+      case ALT_CMD_ADDRESS:
+      case ALT_CMD_LCASE_ADDRESS:
+        submenuAddress();
+        altScreen();
+        break;
+      
       case ALT_CMD_VIEW:
       case ALT_CMD_LCASE_VIEW:
         submenuView();
         altScreen();
         break;
 
-      case KEY_PAGEDOWN:
-        showData(disp_addr + scrollPageAmount(disp_mode));
-        break;
-
       case KEY_PAGEUP:
-        showData(disp_addr - scrollPageAmount(disp_mode));
+        showData(disp_addr[disp_mode] - scrollPageAmount(disp_mode));
         break;
 
-      case KEY_DOWNARROW:
-        showData(disp_addr + scrollLineAmount(disp_mode));
+      case KEY_PAGEDOWN:
+        showData(disp_addr[disp_mode] + scrollPageAmount(disp_mode));
         break;
 
       case KEY_UPARROW:
-        showData(disp_addr + scrollLineAmount(disp_mode));
+        showData(disp_addr[disp_mode] - scrollLineAmount(disp_mode));
+        break;
+
+      case KEY_DOWNARROW:
+        showData(disp_addr[disp_mode] + scrollLineAmount(disp_mode));
+        break;
+
+      case KEY_LEFTARROW:
+        showData(disp_addr[disp_mode] - 1);
+        break;
+
+      case KEY_RIGHTARROW:
+        showData(disp_addr[disp_mode] + 1);
         break;
 
       case ALT_CMD_SWITCHMODE:

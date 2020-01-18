@@ -3,6 +3,7 @@
 //
 // Definitions file for escape codes for various terminal formatting codes
 //
+// (c) 2019, 2020 by David Shadoff
 
 
 #define FG_NORMAL       "\x1b[0m"
@@ -53,7 +54,7 @@
 #define THM_REG_TITLE     FG_BRT_WHITE
 #define THM_REGS          FG_GREEN
 #define THM_REGS_BKGND    FG_BLUE
-//#define THM_ADDR_TITLE   FG_BRT_WHITE
+//#define THM_ADDR_TITLE    FG_BRT_WHITE
 #define THM_ADDRESS       FG_WHITE
 #define THM_HEX_TITLE     FG_BRT_WHITE
 #define THM_HEXDATA       FG_CYAN
@@ -69,6 +70,8 @@
 #define HOME              "\x1b[1;1H"
 #define CLEAR             "\x1b[2J"
 #define CLEAR_EOL         "\x1b[0K"
+#define CURSORLEFT        "\x1b[1D"
+
 #define PRINTAT_OPEN      "\x1b["
 #define PRINTAT_SEPARATOR ";"
 #define PRINTAT_CLOSE     "f"

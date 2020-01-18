@@ -4,6 +4,8 @@
 // This file contains all sorts of common utility routines, such as
 // string/hex conversion, serial I/O and buffer control, etc.
 //
+// (c) 2019, 2020 by David Shadoff
+
 
 #include <Arduino.h>
 #include <SD.h>
@@ -192,6 +194,83 @@ char c1, c2, c3, c4, c5;
     }
     return(keycode);
   }
+}
+
+//
+// char enterValue(int size, int base, char *buf)
+//   Fetch an n-digit hex value into a supplied buffer
+// size = number of digits
+// base = base system (8, 10, or 16)
+// buf  = buffer to write entereed keys into (must be adequately-sized)
+// return value = KEY_ESCAPE for abort, KEY_ENTER for accept
+//
+char enterValue(int size, int base, char *buf)
+{
+char c;
+char cmdList[32];
+int i;
+
+  switch (base) {
+    case 16:
+      strcpy(cmdList, "1234567890AaBbCcDdEeFf\x8\x7f\x0a");
+      break;
+
+    case 10:
+      strcpy(cmdList, "1234567890\x8\x7f\x0a");
+      break;
+
+    case 8:
+      strcpy(cmdList, "12345670\x8\x7f\x0a");
+      break;
+
+    default:
+      return(0);
+  }
+
+  i = 0;
+  while (1) {
+    c = getKeyFromList(cmdList, true);  // command list, and beep if wrong keys
+    
+    if (c == KEY_ESCAPE)
+      return(c);
+
+    if (c == KEY_ENTER) {
+      if (i > (size-1)) {
+        break;
+      }
+      else {
+        Serial.write(BELL);
+        continue;
+      }
+    }
+
+    if ((c == KEY_BACKSPACE) || (c == KEY_DELETE)) {      // backspace
+      *(buf + i) = 0x00;
+      if (i > 0) {
+        i--;
+        Serial.write(CURSORLEFT " " CURSORLEFT);
+      }
+      else {
+        Serial.write(BELL);
+      }
+      continue;
+    }
+
+    if (i > (size-1)) {
+      Serial.write(BELL);
+      continue;
+    }
+
+    if ((c >= 'a') && (c <= 'f')) {    // change lowercase to uppercase
+      c -= 0x20;
+    }
+
+    Serial.write(c);
+    *(buf + i) = c;
+
+    i += 1;
+  }
+  return(c);
 }
 
 //

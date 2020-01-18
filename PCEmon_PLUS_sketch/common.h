@@ -3,6 +3,7 @@
 //
 // Common functions
 //
+// (c) 2019, 2020 by David Shadoff
 
 
 extern bool cardPresent;
@@ -16,6 +17,7 @@ extern char waitKeyEnterEscape(bool beep);
 extern char getKeyFromList(char * list, bool beep);
 
 extern int  fetchKeyInput();
+extern char enterValue(int size, int base, char *buf);
 
 extern void printat(int row, int col);
 extern void printat(char *rowcol);

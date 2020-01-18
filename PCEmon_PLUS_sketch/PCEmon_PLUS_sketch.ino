@@ -1,5 +1,5 @@
 /*
-  PCEmon_accel sketch
+  PCEmon_PLUS sketch
 
   On most boards (including the Adafruit M0 Adalogger), "Serial" refers to the USB
   Serial port attached to the Serial Monitor, and "Serial1" refers to the hardware
@@ -7,7 +7,7 @@
   using those two Serial ports on the boards mentioned above, but you can change
   these names to connect any two serial ports on a board that has multiple ports.
 
-  by David Shadoff
+  (c) 2019, 2020 by David Shadoff
 */
 
 // Strictly speaking, "Serial1" is used to communicate to the PCE side
