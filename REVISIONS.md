@@ -1,5 +1,11 @@
 # REVISIONs
 
+20200222:
+- Added 'rev. C' board design to the repository
+- modified code to accept touch input from teh board instead of keyboard
+  commands for switching inputs or modes
+- Added recommended Teraterm settings for best results to the README.md file
+
 20200118:
 - added scroll left/right (1-byte movement)
 - added "Address" entry command

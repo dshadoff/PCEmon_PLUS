@@ -54,12 +54,29 @@
 
 // This sketch is made specifically for the Adafruit M0 Feather Adalogger
 
-const int chipSelect   = 4;   // Pin used for chip select for on-board SDCard
 
-const int joypadPin    = 11;  // if set high, triggers joypad passthru to port
-const int computerPin  = 10;  // This should be the inverse of joypadPin (status LED)
+// input pins:
+//
+const int joyTouchPin      = A2;
+const int compTouchPin     = A4;
+const int origModeTouchPin = A5;
+const int plusModeTouchPin = A1;
 
 const int attnPin      = 12;  // joypad CLR pin.
                               // Future proposed functionality:
                               //   if PC-E sets this high for >16ms,
                               //   it is a signal to switch back to MCU mode
+
+                              
+// output pins:
+//
+const int origModeLEDPin  = 5;   // Drives LED displaying original mode 
+const int plusModeLEDPin  = 6;   // Drives LED displaying PLUS mode
+
+const int joypadPin    = 11;  // if set high, triggers joypad passthru to port
+const int computerPin  = 10;  // This should be the inverse of joypadPin (status LED)
+
+
+// miscellaneous pins:
+//
+const int chipSelect   = 4;   // Pin used for chip select for on-board SDCard

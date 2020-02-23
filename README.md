@@ -13,18 +13,32 @@ in future, if it would be helpful for the functionality added.
 
 Features:
 - Instead of swapping cables between joypad and computer, this board can change
-which input is active, without interrupting the communications between computer
-and microcontroller.
-- Currently, it powers up with a shell pass-thru interface with trivial commands;
-typing the '|' will bring up an alternate interface which is being built, but can
-currently view and scroll through main memory and VRAM (with more to come)
+which input is active, with the touch of a pad on the microcontroller board
+- Currently, it powers up with a shell pass-thru interface with the original
+PCEmon commands; touching the 'PLUS mode' touchpad on the board will bring up
+an alternate interface which is being built, but can currently view and scroll
+through main memory and VRAM (with more to come)
 
 
 NOTES:
+------
+Recommended Teraterm settings by Setup menu area:
+Terminal:
+- New-line: Transmit - change to LF
+
+Font:
 - If you use Teraterm on Windows, I found that the default font is thin and wispy; a better
   font to use is "HGSoeiKakuGothicUB" (Regular)
 
+Serial Port:
+- Start with default 19200
+
+Additional Settings, 'General' tab:
+- Unset "Clear display when window resized"
+- Set "Display serial port speed"
+
 TODOs:
+------
 - Add interactive memory edit
 - Add ZMODEM transfers for easier data handling
 - Add disassembler (and save to SDCard/computer)

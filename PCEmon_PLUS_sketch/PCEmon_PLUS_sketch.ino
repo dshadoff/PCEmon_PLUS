@@ -7,6 +7,8 @@
   using those two Serial ports on the boards mentioned above, but you can change
   these names to connect any two serial ports on a board that has multiple ports.
 
+  This version of the sketch is intended for "rev. C" of the board
+
   (c) 2019, 2020 by David Shadoff
 */
 
@@ -29,12 +31,6 @@ extern void altLoop();
 extern void setAltMode();
 
 File dataFile;
-bool helpGeneral = false;
-
-
-#define CMD_JOYPAD_IN       ','
-#define CMD_COMPUTER_IN     '.'
-#define CMD_SWITCHMODE      '|'
 
 
 void setup()
@@ -53,6 +49,9 @@ void setup()
 
   digitalWrite(joypadPin,   LOW);  // switch PCE to computer input (not joypad)
   digitalWrite(computerPin, HIGH); // 
+
+  digitalWrite(plusModeLEDPin, LOW);  // switch PCE to original mode 
+  digitalWrite(origModeLEDPin, HIGH); // 
 
   // Detect and initialze SDCard access hardware
   cardPresent = true;
@@ -99,6 +98,8 @@ void setup()
 //
 // Add some instructions to 'accelerate' the grab/download of BRAM data
 // as an example of what can be done as part of acceleration
+//
+// This function will be relocated to the "alternate commands" side soon
 //
 void getbram()
 {
@@ -154,59 +155,46 @@ int c;
   Serial.println("done");
 }
 
-void miniHelp()
-{
-  Serial.println("");
-  Serial.println("");
-  Serial.println(FG_YELLOW " (Special PCEmon PLUS commands in YELLOW)" FG_DEFAULT); 
-  Serial.println(FG_YELLOW " , - Switch to PCE Joypad input" FG_DEFAULT); 
-  Serial.println(FG_YELLOW " . - Switch to PCEmon PLUS input" FG_DEFAULT); 
-  Serial.print(FG_YELLOW " | - Switch to alternate mode (bug monitor mode)" FG_DEFAULT); 
-}
-
 void loop() {
 int c;
+int a1, a2, a4;
+const int touchThreshold = 100;
 
   if (modeMonitor == true) {
     altLoop();
     return;
   }
-  
+ 
+  a1 = analogRead(joyTouchPin);
+  a2 = analogRead(compTouchPin);
+  a4 = analogRead(plusModeTouchPin);
+
+  // deal with touchpad inputs
+  //
+  if (a1 < touchThreshold)
+    switchPCEInput(JOYPAD_IN);
+
+  else if (a2 < touchThreshold)
+    switchPCEInput(COMPUTER_IN);
+
+  else if (a4 < touchThreshold) {
+    modeMonitor = true;
+    setAltMode();
+  }
+
   if (Serial.available()) {      // If anything comes in Serial (USB),
     c = Serial.read();
 
-    if (c == CMD_SWITCHMODE) {
-      modeMonitor = true;
-      setAltMode();
-    }
-    else if (c == 'Z')
-      getbram();
-    else if (c == CMD_JOYPAD_IN) {           // Note: these keys may be changed in the future
-      switchPCEInput(JOYPAD_IN);
-    }
-    else if (c == CMD_COMPUTER_IN) {         // Note: these keys may be changed in the future
-      switchPCEInput(COMPUTER_IN);
-    }
-    else if (c == '?') {
-      helpGeneral = true;
-      switchPCEInput(COMPUTER_IN);
-      PCE.write(c);
-    }
-    else if (c == '\x0a') {
-      switchPCEInput(COMPUTER_IN);
-      PCE.write(c);
-      if (helpGeneral == true) {
-        miniHelp();            // Preface PCEmon's regular help with our own
-        helpGeneral = false;
-      }
-    }
-    else {
-      helpGeneral = false;
-      switchPCEInput(COMPUTER_IN);
-      PCE.write(c);   // read it and send it out Serial1 (pins 0 & 1)
-//      printhex2(c);        // This could be an alternate to print
-//      Serial.print(" ");   // hex codes of unknown keys
-    }
+//  Filtering inputs was found to be a problem in a previous version,
+//  so all input filtering is now removed, and the job of the touchpads
+//  on the PC board
+//
+//    if (c == 'Z')
+//      getbram();
+//    else {
+//    }
+    switchPCEInput(COMPUTER_IN);
+    PCE.write(c);   // read it and send it out Serial1 (pins 0 & 1)
   }
 
   if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)

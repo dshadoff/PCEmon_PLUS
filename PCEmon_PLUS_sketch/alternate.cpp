@@ -14,10 +14,7 @@
 
 // COMMANDS:
 //
-#define ALT_CMD_JOYPAD_IN       ','
-#define ALT_CMD_COMPUTER_IN     '.'
 #define ALT_CMD_HELP            '?'
-#define ALT_CMD_SWITCHMODE      '|'
 
 #define ALT_CMD_ADDRESS         'A'
 #define ALT_CMD_LCASE_ADDRESS   'a'
@@ -383,9 +380,11 @@ char c;
   Serial.println(" Instant Operation Commands (one-key operation):");
   Serial.println(" -----------------------------------------------");
   Serial.println(" ?   - Help (this screen)");
-  Serial.println(" |   - Switch command mode back to original (PCEmon orig)");
-  Serial.println(" , . - Switch PC Engine input to use Joypad/microcontroller");
-  Serial.println(" .   - Switch PC Engine input to use microcontroller");
+// These functions removed...
+//
+//  Serial.println(" |   - Switch command mode back to original (PCEmon orig)");
+//  Serial.println(" , . - Switch PC Engine input to use Joypad/microcontroller");
+//  Serial.println(" .   - Switch PC Engine input to use microcontroller");
   Serial.println(" up/dn/pgup/pgdn - scroll through displayed data");
   Serial.println("");
   Serial.println(" A xxxx - Set address (hexadecimal)");
@@ -411,7 +410,10 @@ char c;
 //////
 void setAltMode()
 {
-  // first, turn ECHO off
+  digitalWrite(plusModeLEDPin, HIGH);  // switch PCE to PLUS mode 
+  digitalWrite(origModeLEDPin, LOW); // 
+
+  // now turn ECHO off
   if (PCE_Echo == true) {
     switchPCEInput(COMPUTER_IN);
     PCE.println("O E");        // turn off (or on) echo
@@ -440,7 +442,10 @@ void setAltMode()
 //////
 void setNormalMode()
 {
-  // first, turn ECHO on
+  digitalWrite(plusModeLEDPin, LOW);  // switch PCE to PLUS mode 
+  digitalWrite(origModeLEDPin, HIGH); // 
+
+  // now turn ECHO on
   switchPCEInput(COMPUTER_IN);
   PCE.println("O E");        // turn off (or on) echo
   PCE_Echo = true;
@@ -592,6 +597,25 @@ int amount;
 void altLoop()
 {
 int c;
+int a1, a2, a3;
+const int touchThreshold = 100;
+
+  a1 = analogRead(joyTouchPin);
+  a2 = analogRead(compTouchPin);
+  a3 = analogRead(origModeTouchPin);
+
+  // deal with touchpad inputs
+  //
+  if (a1 < touchThreshold)
+    switchPCEInput(JOYPAD_IN);
+
+  else if (a2 < touchThreshold)
+    switchPCEInput(COMPUTER_IN);
+
+  else if (a3 < touchThreshold) {
+    modeMonitor = false;
+    setNormalMode();
+  }
 
   if (checkForKey()) {      // If anything comes in Serial (USB),
     c = fetchKeyInput();
@@ -636,19 +660,6 @@ int c;
 
       case KEY_RIGHTARROW:
         showData(disp_addr[disp_mode] + 1);
-        break;
-
-      case ALT_CMD_SWITCHMODE:
-        modeMonitor = false;
-        setNormalMode();
-        return;
-
-      case ALT_CMD_JOYPAD_IN:
-        switchPCEInput(JOYPAD_IN);
-        break;
-
-      case ALT_CMD_COMPUTER_IN:
-        switchPCEInput(COMPUTER_IN);
         break;
 
       case ALT_CMD_HELP:
