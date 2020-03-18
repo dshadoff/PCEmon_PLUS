@@ -599,6 +599,9 @@ void altLoop()
 int c;
 int a1, a2, a3;
 const int touchThreshold = 100;
+int numbytes, readsize, bytesread;
+boolean flush = false;
+char buffer[49];
 
   a1 = analogRead(joyTouchPin);
   a2 = analogRead(compTouchPin);
@@ -679,13 +682,24 @@ const int touchThreshold = 100;
         Serial.print(" ");
         break;
     }
+    return;
   }
 
   // spool returned data from PCE back to screen
   // (if not consumed by commands above)
   // -> In Bug Monitor mode, this should be rare if at all
   //
-  if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)
-    Serial.write(PCE.read());   // read it and send it out Serial (USB)
+  delay(4);                               // pause to prevent more than 250 USB packets per second
+
+  numbytes = PCE.available();             // If anything comes in Serial1 (pins 0 & 1)
+  if (numbytes > 0) {
+    readsize = min(48, numbytes);
+    bytesread = PCE.readBytes(buffer, readsize);
+    Serial.write(buffer, bytesread);      // read it and send it out Serial (USB)
+    flush = true;
+  }
+  else if (flush == true) {
+    Serial.flush();
+    flush = false;
   }
 }

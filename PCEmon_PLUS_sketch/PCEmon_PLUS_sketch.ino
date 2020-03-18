@@ -159,6 +159,9 @@ void loop() {
 int c;
 int a1, a2, a4;
 const int touchThreshold = 100;
+int numbytes, readsize, bytesread;
+boolean flush = false;
+char buffer[49];
 
   if (modeMonitor == true) {
     altLoop();
@@ -195,9 +198,20 @@ const int touchThreshold = 100;
 //    }
     switchPCEInput(COMPUTER_IN);
     PCE.write(c);   // read it and send it out Serial1 (pins 0 & 1)
+    return;
   }
 
-  if (PCE.available()) {            // If anything comes in Serial1 (pins 0 & 1)
-    Serial.write(PCE.read());       // read it and send it out Serial (USB)
+  delay(4);                               // pause to prevent more than 250 USB packets per second
+
+  numbytes = PCE.available();
+  if (numbytes > 0) {                     // If anything comes in Serial1 (pins 0 & 1)
+    readsize = min(48, numbytes);
+    bytesread = PCE.readBytes(buffer, readsize);
+    Serial.write(buffer, bytesread);      // read it and send it out Serial (USB)
+    flush = true;
+  }
+  else if (flush == true) {
+    Serial.flush();
+    flush = false;
   }
 }
