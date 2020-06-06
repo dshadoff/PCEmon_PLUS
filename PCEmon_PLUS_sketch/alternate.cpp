@@ -124,12 +124,12 @@ void getRegs()
 
   reg_mpr[0] = hextoint16(line_buffer + 32);
   reg_mpr[1] = hextoint16(line_buffer + 35);
-  reg_mpr[2] = hextoint16(line_buffer + 41);
-  reg_mpr[3] = hextoint16(line_buffer + 44);
-  reg_mpr[4] = hextoint16(line_buffer + 47);
-  reg_mpr[5] = hextoint16(line_buffer + 50);
-  reg_mpr[6] = hextoint16(line_buffer + 53);
-  reg_mpr[7] = hextoint16(line_buffer + 56);
+  reg_mpr[2] = hextoint16(line_buffer + 38);
+  reg_mpr[3] = hextoint16(line_buffer + 41);
+  reg_mpr[4] = hextoint16(line_buffer + 44);
+  reg_mpr[5] = hextoint16(line_buffer + 47);
+  reg_mpr[6] = hextoint16(line_buffer + 50);
+  reg_mpr[7] = hextoint16(line_buffer + 53);
 }
 
 // This will query PCEmon for memory; currently only
